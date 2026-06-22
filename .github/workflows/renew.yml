@@ -45,7 +45,7 @@ jobs:
         # Save clash format
         echo "$SUB_CONTENT" > vpn_subs_clash.txt
         
-        # Convert to QuantumultX format using Python
+        # Convert to QuantumultX URI format using Python
         echo "$SUB_CONTENT" | python3 convert_qx.py > vpn_subs_qx.txt
         
         # Commit and push

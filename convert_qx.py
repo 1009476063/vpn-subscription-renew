@@ -1,5 +1,6 @@
 import sys
 import yaml
+import base64
 
 content = sys.stdin.read()
 data = yaml.safe_load(content)
@@ -17,68 +18,93 @@ for proxy in data.get('proxies', []):
     servername = proxy.get('servername', '')
     flow = proxy.get('flow', '')
     
+    # Build vless URI format
     if proxy_type == 'vless':
-        # QuantumultX vless format
-        obfs_params = []
+        # vless://uuid@server:port?encryption=none&security=tls&sni=servername&flow=xtls-rprx-vision&type=tcp#Tag
+        params = []
+        params.append("encryption=none")
+        
         if tls:
-            obfs_params.append('over-tls=true')
+            params.append("security=tls")
             if servername:
-                obfs_params.append(f'tls-host={servername}')
-            obfs_params.append('tls-verification=true' if not skip_cert_verify else 'tls-verification=false')
+                params.append(f"sni={servername}")
+            if not skip_cert_verify:
+                params.append("allowInsecure=0")
+            else:
+                params.append("allowInsecure=1")
+        
         if flow and 'xtls' in flow:
-            obfs_params.append('tls-params=xtls')
+            params.append("flow=xtls-rprx-vision")
         
-        obfs_str = ', '.join(obfs_params)
-        line = f'{name} = vless, {server}, {port}, {uuid}, {cipher}'
-        if obfs_str:
-            line += f', {obfs_str}'
-        qx_lines.append(line)
+        params.append("type=tcp")
+        
+        param_str = "&".join(params)
+        # URL encode the name for tag
+        import urllib.parse
+        encoded_name = urllib.parse.quote(name)
+        
+        uri = f"vless://{uuid}@{server}:{port}?{param_str}#{encoded_name}"
+        qx_lines.append(uri)
     elif proxy_type == 'vmess':
-        # QuantumultX vmess format
-        obfs_params = []
-        if tls:
-            obfs_params.append('over-tls=true')
-            if servername:
-                obfs_params.append(f'tls-host={servername}')
-            obfs_params.append('tls-verification=true' if not skip_cert_verify else 'tls-verification=false')
+        # Build vmess config for QuantumultX
+        vmess_config = {
+            "v": "2",
+            "ps": name,
+            "add": server,
+            "port": str(port),
+            "id": uuid,
+            "aid": str(proxy.get('alterId', 0)),
+            "scy": cipher if cipher else "auto",
+            "net": proxy.get('network', 'tcp'),
+            "type": "none",
+            "host": "",
+            "path": "",
+            "tls": "tls" if tls else "",
+            "sni": servername,
+            "alpn": "",
+            "fp": ""
+        }
+        
+        # Handle ws options
         if proxy.get('network') == 'ws':
-            obfs_params.append('obfs=ws')
-            obfs_path = proxy.get('ws-opts', {}).get('path', '')
-            if obfs_path:
-                obfs_params.append(f'obfs-uri={obfs_path}')
+            ws_opts = proxy.get('ws-opts', {})
+            vmess_config["host"] = ws_opts.get('headers', {}).get('Host', '')
+            vmess_config["path"] = ws_opts.get('path', '')
         
-        obfs_str = ', '.join(obfs_params)
-        line = f'{name} = vmess, {server}, {port}, {cipher}, {uuid}'
-        if obfs_str:
-            line += f', {obfs_str}'
-        qx_lines.append(line)
-    elif proxy_type == 'ss':
-        method = proxy.get('cipher', 'aes-256-gcm')
-        password = proxy.get('password', '')
-        obfs_params = []
-        plugin = proxy.get('plugin', '')
-        plugin_opts = proxy.get('plugin-opts', {})
-        if plugin == 'obfs':
-            obfs_params.append(f'obfs={plugin_opts.get("mode", "http")}')
-            if plugin_opts.get('host'):
-                obfs_params.append(f'obfs-host={plugin_opts["host"]}')
-        
-        obfs_str = ', '.join(obfs_params)
-        line = f'{name} = ss, {server}, {port}, encrypt-method={method}, password={password}'
-        if obfs_str:
-            line += f', {obfs_str}'
-        qx_lines.append(line)
+        # Base64 encode
+        vmess_json = str(vmess_config).replace("'", '"')
+        vmess_b64 = base64.b64encode(vmess_json.encode()).decode()
+        uri = f"vmess://{vmess_b64}"
+        qx_lines.append(uri)
     elif proxy_type == 'trojan':
-        obfs_params = []
-        obfs_params.append('over-tls=true')
-        if servername:
-            obfs_params.append(f'tls-host={servername}')
-        obfs_params.append('tls-verification=true' if not skip_cert_verify else 'tls-verification=false')
+        # trojan://password@server:port?security=tls&sni=servername#Tag
+        params = []
+        if tls:
+            params.append("security=tls")
+            if servername:
+                params.append(f"sni={servername}")
+            if not skip_cert_verify:
+                params.append("allowInsecure=0")
+            else:
+                params.append("allowInsecure=1")
         
-        obfs_str = ', '.join(obfs_params)
-        line = f'{name} = trojan, {server}, {port}, {uuid}'
-        if obfs_str:
-            line += f', {obfs_str}'
-        qx_lines.append(line)
+        param_str = "&".join(params) if params else ""
+        import urllib.parse
+        encoded_name = urllib.parse.quote(name)
+        
+        uri = f"trojan://{uuid}@{server}:{port}"
+        if param_str:
+            uri += f"?{param_str}"
+        uri += f"#{encoded_name}"
+        qx_lines.append(uri)
+    elif proxy_type == 'ss':
+        # ss://base64(method:password)@server:port#Tag
+        import urllib.parse
+        method_pwd = base64.b64encode(f"{cipher}:{proxy.get('password', '')}".encode()).decode()
+        encoded_name = urllib.parse.quote(name)
+        uri = f"ss://{method_pwd}@{server}:{port}#{encoded_name}"
+        qx_lines.append(uri)
 
-print('\n'.join(qx_lines))
+# Output as base64 encoded subscription
+output = "\n".join(qx_lines)
+print(base64.b64encode(output.encode()).decode())
