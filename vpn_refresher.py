@@ -204,8 +204,8 @@ def update_gist(clash_content, qx_base64):
     }
     
     try:
-        response = request_with_retry('PATCH', f"https://api.github.com/gists/{GIST_ID}", 
-                                      headers=headers, json=data)
+        response = requests.patch(f"https://api.github.com/gists/{GIST_ID}",
+                                    headers=headers, json=data, timeout=30)
         print("[SUCCESS] Gist updated successfully!")
         return True
     except Exception as e:
