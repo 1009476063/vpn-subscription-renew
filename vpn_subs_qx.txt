@@ -1,0 +1,41 @@
+（电信/联通）光遇-香港2 = vless, 43.255.159.172, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+（电信/联通）光遇-香港M = vless, 84.75.202.68, 31001, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-法国1 = vless, beatr-eu1.599789.xyz, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-法国2 = vless, tomhk2.chatagent.online, 27185, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-印度1 = vless, beatr519-in1.599789.xyz, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-印度2 = vless, tomhk2.chatagent.online, 6875, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-香港G = vless, tomhk2.chatagent.online, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-香港H = vless, tomhk1.chatagent.online, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Royal Match（HK）中国香港7 = vless, 207.57.129.122, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Subway Surfers（HK）中国香港0 = vless, anyhk1.deepfind.site, 51931, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Roblox（HK）中国香港1 = vless, 87.83.109.246, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Pokémon GO（HK）中国香港2 = vless, tmp.deepfind.site, 52396, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Clash Royale（HK）中国香港12 = vless, tmp.deepfind.site, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+（专线）Clash Royale中国香港12 = vless, 84.75.202.68, 10311, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Clash Royale（HK）中国香港13 = vless, takehk3.deepfind.site, 8443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Clash Royale 日本14 = vless, takehk4.deepfind.site, 8443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Royal Match（KR）韩国2 = vless, tomkr.kuaimiao.online, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-美国6 = vless, 166.0.17.114, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-美国6A = vless, tomhk1.chatagent.online, 43846, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Brawl Stars（US）美国6 = vless, tomhk2.chatagent.online, 9846, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Mobile Legends（US）美国9 = vless, 23.149.60.57, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Candy Crush（US）美国7 = vless, 23.149.60.220, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Pokémon GO（US）美国8 = vless, 23.149.60.180, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Monopoly GO（KH）柬埔寨 = vless, anyhk1.deepfind.site, 19660, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-日本8 = vless, jp2.xiaohuojian123.vip, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-日本9 = vless, jp1.xiaohuojian123.vip, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-日本10 = vless, jp3.xiaohuojian123.vip, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+State of Survival（IT）意大利1 = vless, 132.243.255.64, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Genshin Impact（IT）意大利2 = vless, anyhk1.deepfind.site, 18480, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-日本2 = vless, tomjp1.kuaimiao.online, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile-新加坡1 = vless, takesjp.kuaimiao.online, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+State of Survival（TR）土耳其 = vless, anyhk1.deepfind.site, 36525, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Last War（ID）印尼 = vless, 207.174.133.115, 59491, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+State of Survival（JP）日本3 = vless, tomjp.kuaimiao.online, 443, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Subway Surfers（TH）泰国 = vless, anyhk1.deepfind.site, 24295, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Last War（UK）英国1 = vless, tmp.deepfind.site, 54414, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Honkai Star Rail（VN）越南 1 = vless, anyhk1.deepfind.site, 5463, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+PUBG Mobile（PHL）菲律宾 = vless, 103.72.5.57, 29654, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Mobile Legends（AU）澳大利亚1 = vless, tomhk1.chatagent.online, 19748, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Marvel Snap（TW）中国台湾 = vless, tomhk1.chatagent.online, 10237, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
+Pokémon GO（CA）加拿大1 = vless, tomhk1.chatagent.online, 29889, ccc3ba44-b7df-4e2a-bcd9-e90067488db2, auto, xtls-params=xray,tls,host=www.tesla.com
