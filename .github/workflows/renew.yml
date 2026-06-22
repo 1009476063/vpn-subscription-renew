@@ -2,11 +2,10 @@ name: Renew VPN Subscription
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: write-all
 
 jobs:
   renew:
@@ -15,38 +14,16 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y jq python3-yaml
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
 
-    - name: Get and update subscription
-      run: |
-        DEVICE_KEY="$(( RANDOM % (99999999 - 10000000 + 1) + 10000000 ))-f3ca-4bdf-9192-f5c452a2c923"
-        
-        RESPONSE=$(curl -s -X POST "https://api.kuaimiaov4.com/appV4api/manusAi/applyLogin" \
-          -H "user-agent: Dart/3.12 (dart:io)" \
-          -H "content-type: application/json" \
-          -H "accept-encoding: gzip" \
-          -d "{\"deviceKey\": \"$DEVICE_KEY\"}")
-        
-        YML_URL=$(echo "$RESPONSE" | jq -r '.data.ymlUrl // empty')
-        
-        if [ -z "$YML_URL" ]; then
-          echo "Error: Failed to get subscription URL"
-          exit 1
-        fi
-        
-        SUB_CONTENT=$(curl -s -L "$YML_URL")
-        
-        if [ -z "$SUB_CONTENT" ]; then
-          echo "Error: Failed to fetch subscription content"
-          exit 1
-        fi
-        
-        echo "$SUB_CONTENT" > vpn_subs_clash.txt
-        echo "$SUB_CONTENT" | python3 convert_qx.py > vpn_subs_qx.txt
-        
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add vpn_subs_clash.txt vpn_subs_qx.txt
-        git diff --cached --quiet || git commit -m "Update VPN subscription $(date +%Y-%m-%d_%H:%M)"
-        git push
+    - name: Install Dependencies
+      run: pip install requests pyyaml
+
+    - name: Run Subscription Refresher
+      env:
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        GIST_ID: ${{ secrets.GIST_ID }}
+      run: python vpn_refresher.py
