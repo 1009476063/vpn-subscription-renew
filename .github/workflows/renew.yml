@@ -14,9 +14,10 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get update && sudo apt-get install -y jq
 
-    - name: Get subscription
+    - name: Get and update subscription
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GIST_ID: 8145b94a0e627b983d10e1d42c96996f
       run: |
         # Generate device key
         DEVICE_KEY="$(( RANDOM % (99999999 - 10000000 + 1) + 10000000 ))-f3ca-4bdf-9192-f5c452a2c923"
@@ -50,7 +51,11 @@ jobs:
         
         echo "Got subscription content (first 100 chars): ${SUB_CONTENT:0:100}"
         
-        # Update gist using gh CLI
-        echo "$SUB_CONTENT" | gh gist edit 5cb529ae7fa69666ec70b1d831d29fd3 --filename "vpn_subs_kuaimao.txt"
+        # Delete old gist and create new one
+        gh gist delete "$GIST_ID" --yes 2>/dev/null || true
         
+        # Create new gist with subscription content
+        NEW_GIST_URL=$(echo "$SUB_CONTENT" | gh gist create --public --filename "vpn_subs_kuaimao.txt")
+        
+        echo "New gist created: $NEW_GIST_URL"
         echo "✓ Gist updated successfully"
