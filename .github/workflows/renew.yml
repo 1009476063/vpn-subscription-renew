@@ -2,10 +2,11 @@ name: Renew VPN Subscription
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
-permissions: write-all
+permissions:
+  contents: write
 
 jobs:
   renew:
@@ -22,8 +23,101 @@ jobs:
     - name: Install Dependencies
       run: pip install requests pyyaml
 
-    - name: Run Subscription Refresher
-      env:
-        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-        GIST_ID: ${{ secrets.GIST_ID }}
-      run: python vpn_refresher.py
+    - name: Get and update subscription
+      run: |
+        python3 -c "
+        import random
+        import requests
+        import yaml
+        import base64
+        import urllib.parse
+
+        API_URL = 'https://api.kuaimiaov4.com/appV4api/manusAi/applyLogin'
+        device_key = f'{random.randint(10000000, 99999999)}-f3ca-4bdf-9192-f5c452a2c923'
+        
+        headers = {
+            'user-agent': 'Dart/3.12 (dart:io)',
+            'content-type': 'application/json',
+            'accept-encoding': 'gzip'
+        }
+        
+        # 获取订阅
+        response = requests.post(API_URL, json={'deviceKey': device_key}, headers=headers, timeout=15)
+        data = response.json()
+        yml_url = data.get('data', {}).get('ymlUrl')
+        
+        if not yml_url:
+            print('Error: No ymlUrl')
+            exit(1)
+        
+        sub_response = requests.get(yml_url, timeout=15)
+        clash_content = sub_response.text
+        
+        # 保存 Clash 格式
+        with open('vpn_subs_clash.txt', 'w') as f:
+            f.write(clash_content)
+        
+        # 转换为 QuantumultX 格式
+        data = yaml.safe_load(clash_content)
+        qx_lines = []
+        
+        for proxy in data.get('proxies', []):
+            name = proxy.get('name', '')
+            server = proxy.get('server', '')
+            port = proxy.get('port', 0)
+            proxy_type = proxy.get('type', '')
+            uuid = proxy.get('uuid', '')
+            cipher = proxy.get('cipher', 'auto')
+            tls = proxy.get('tls', False)
+            skip_cert_verify = proxy.get('skip-cert-verify', False)
+            servername = proxy.get('servername', '')
+            flow = proxy.get('flow', '')
+            fingerprint = proxy.get('client-fingerprint', '')
+            reality_opts = proxy.get('reality-opts', {})
+            public_key = reality_opts.get('public-key', '')
+            short_id = reality_opts.get('short-id', '')
+            
+            if proxy_type == 'vless':
+                params = ['encryption=none']
+                if public_key:
+                    params.append('security=reality')
+                    if servername:
+                        params.append(f'sni={servername}')
+                    params.append(f'pbk={public_key}')
+                    if short_id:
+                        params.append(f'sid={short_id}')
+                    if fingerprint:
+                        params.append(f'fp={fingerprint}')
+                    params.append('allowInsecure=0')
+                elif tls:
+                    params.append('security=tls')
+                    if servername:
+                        params.append(f'sni={servername}')
+                    params.append('allowInsecure=0' if not skip_cert_verify else 'allowInsecure=1')
+                
+                if flow and 'xtls' in flow:
+                    params.append('flow=xtls-rprx-vision')
+                params.append('type=tcp')
+                
+                param_str = '&'.join(params)
+                encoded_name = urllib.parse.quote(name)
+                uri = f'vless://{uuid}@{server}:{port}?{param_str}#{encoded_name}'
+                qx_lines.append(uri)
+        
+        # 保存 QuantumultX 格式（Base64 编码）
+        qx_content = '\n'.join(qx_lines)
+        qx_base64 = base64.b64encode(qx_content.encode()).decode()
+        
+        with open('vpn_subs_qx.txt', 'w') as f:
+            f.write(qx_base64)
+        
+        print('Subscription updated successfully')
+        "
+
+    - name: Commit and push
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add vpn_subs_clash.txt vpn_subs_qx.txt
+        git diff --cached --quiet || git commit -m "Update VPN subscription $(date +%Y-%m-%d_%H:%M)"
+        git push
