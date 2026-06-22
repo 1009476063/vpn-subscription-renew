@@ -1,6 +1,7 @@
 import sys
 import yaml
 import base64
+import urllib.parse
 
 content = sys.stdin.read()
 data = yaml.safe_load(content)
@@ -17,14 +18,33 @@ for proxy in data.get('proxies', []):
     skip_cert_verify = proxy.get('skip-cert-verify', False)
     servername = proxy.get('servername', '')
     flow = proxy.get('flow', '')
+    fingerprint = proxy.get('client-fingerprint', '')
     
-    # Build vless URI format
+    # Reality params
+    reality_opts = proxy.get('reality-opts', {})
+    public_key = reality_opts.get('public-key', '')
+    short_id = reality_opts.get('short-id', '')
+    
     if proxy_type == 'vless':
-        # vless://uuid@server:port?encryption=none&security=tls&sni=servername&flow=xtls-rprx-vision&type=tcp#Tag
         params = []
         params.append("encryption=none")
         
-        if tls:
+        # Check if Reality
+        if public_key:
+            params.append("security=reality")
+            if servername:
+                params.append(f"sni={servername}")
+            if public_key:
+                params.append(f"pbk={public_key}")
+            if short_id:
+                params.append(f"sid={short_id}")
+            if fingerprint:
+                params.append(f"fp={fingerprint}")
+            if skip_cert_verify:
+                params.append("allowInsecure=1")
+            else:
+                params.append("allowInsecure=0")
+        elif tls:
             params.append("security=tls")
             if servername:
                 params.append(f"sni={servername}")
@@ -39,14 +59,11 @@ for proxy in data.get('proxies', []):
         params.append("type=tcp")
         
         param_str = "&".join(params)
-        # URL encode the name for tag
-        import urllib.parse
         encoded_name = urllib.parse.quote(name)
         
         uri = f"vless://{uuid}@{server}:{port}?{param_str}#{encoded_name}"
         qx_lines.append(uri)
     elif proxy_type == 'vmess':
-        # Build vmess config for QuantumultX
         vmess_config = {
             "v": "2",
             "ps": name,
@@ -62,22 +79,19 @@ for proxy in data.get('proxies', []):
             "tls": "tls" if tls else "",
             "sni": servername,
             "alpn": "",
-            "fp": ""
+            "fp": fingerprint
         }
         
-        # Handle ws options
         if proxy.get('network') == 'ws':
             ws_opts = proxy.get('ws-opts', {})
             vmess_config["host"] = ws_opts.get('headers', {}).get('Host', '')
             vmess_config["path"] = ws_opts.get('path', '')
         
-        # Base64 encode
         vmess_json = str(vmess_config).replace("'", '"')
         vmess_b64 = base64.b64encode(vmess_json.encode()).decode()
         uri = f"vmess://{vmess_b64}"
         qx_lines.append(uri)
     elif proxy_type == 'trojan':
-        # trojan://password@server:port?security=tls&sni=servername#Tag
         params = []
         if tls:
             params.append("security=tls")
@@ -89,7 +103,6 @@ for proxy in data.get('proxies', []):
                 params.append("allowInsecure=1")
         
         param_str = "&".join(params) if params else ""
-        import urllib.parse
         encoded_name = urllib.parse.quote(name)
         
         uri = f"trojan://{uuid}@{server}:{port}"
@@ -98,13 +111,10 @@ for proxy in data.get('proxies', []):
         uri += f"#{encoded_name}"
         qx_lines.append(uri)
     elif proxy_type == 'ss':
-        # ss://base64(method:password)@server:port#Tag
-        import urllib.parse
         method_pwd = base64.b64encode(f"{cipher}:{proxy.get('password', '')}".encode()).decode()
         encoded_name = urllib.parse.quote(name)
         uri = f"ss://{method_pwd}@{server}:{port}#{encoded_name}"
         qx_lines.append(uri)
 
-# Output as base64 encoded subscription
 output = "\n".join(qx_lines)
 print(base64.b64encode(output.encode()).decode())
