@@ -20,10 +20,47 @@ GIST_TOKEN = os.environ.get('GIST_TOKEN')
 GIST_FILENAME_CLASH = "vpn_subs_clash.txt"
 GIST_FILENAME_QX = "vpn_subs_qx.txt"
 
+# 增加超时时间和重试机制
+REQUEST_TIMEOUT = 30
+MAX_RETRIES = 3
+
 
 def generate_device_key():
     """生成随机设备密钥"""
     return f"{random.randint(10000000, 99999999)}-f3ca-4bdf-9192-f5c452a2c923"
+
+
+def request_with_retry(method, url, max_retries=MAX_RETRIES, timeout=REQUEST_TIMEOUT, **kwargs):
+    """带重试的请求函数"""
+    for attempt in range(max_retries):
+        try:
+            if method.upper() == 'GET':
+                response = requests.get(url, timeout=timeout, **kwargs)
+            elif method.upper() == 'POST':
+                response = requests.post(url, timeout=timeout, **kwargs)
+            else:
+                raise ValueError(f"Unsupported method: {method}")
+            response.raise_for_status()
+            return response
+        except requests.exceptions.Timeout:
+            print(f"[WARN] Request timeout (attempt {attempt + 1}/{max_retries}): {url}")
+            if attempt < max_retries - 1:
+                import time
+                wait = (attempt + 1) * 5
+                print(f"[INFO] Retrying in {wait} seconds...")
+                time.sleep(wait)
+            else:
+                raise
+        except requests.exceptions.ConnectionError as e:
+            print(f"[WARN] Connection error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                import time
+                wait = (attempt + 1) * 5
+                print(f"[INFO] Retrying in {wait} seconds...")
+                time.sleep(wait)
+            else:
+                raise
+    return None
 
 
 def get_subscription():
@@ -37,8 +74,8 @@ def get_subscription():
     }
     
     try:
-        response = requests.post(API_URL, json={"deviceKey": device_key}, headers=headers, timeout=15)
-        response.raise_for_status()
+        # 第一步：获取订阅URL
+        response = request_with_retry('POST', API_URL, json={"deviceKey": device_key}, headers=headers)
         data = response.json()
         
         yml_url = data.get('data', {}).get('ymlUrl')
@@ -48,10 +85,9 @@ def get_subscription():
         
         print(f"[SUCCESS] Got subscription URL: {yml_url}")
         
-        # 获取实际订阅内容
-        sub_response = requests.get(yml_url, timeout=15)
-        sub_response.raise_for_status()
-        
+        # 第二步：获取实际订阅内容（增加超时）
+        sub_response = request_with_retry('GET', yml_url, timeout=60)
+        print(f"[SUCCESS] Got subscription content ({len(sub_response.text)} bytes)")
         return sub_response.text
         
     except Exception as e:
@@ -168,9 +204,8 @@ def update_gist(clash_content, qx_base64):
     }
     
     try:
-        response = requests.patch(f"https://api.github.com/gists/{GIST_ID}", 
-                                  headers=headers, json=data, timeout=15)
-        response.raise_for_status()
+        response = request_with_retry('PATCH', f"https://api.github.com/gists/{GIST_ID}", 
+                                      headers=headers, json=data)
         print("[SUCCESS] Gist updated successfully!")
         return True
     except Exception as e:
