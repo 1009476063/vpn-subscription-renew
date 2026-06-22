@@ -21,5 +21,6 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "Triggering Renew VPN Subscription workflow..."
-        gh workflow run renew.yml -R ${{ github.repository }} --ref main -f event_type=renew-trigger
+        gh api repos/${{ github.repository }}/actions/workflows/renew.yml/dispatches \
+          -f ref=main
         echo "Triggered successfully!"
