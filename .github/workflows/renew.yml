@@ -5,6 +5,9 @@ on:
     - cron: '0 */20 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   renew:
     runs-on: ubuntu-latest
@@ -13,6 +16,8 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y jq
 
     - name: Get subscription
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # Generate device key
         DEVICE_KEY="$(( RANDOM % (99999999 - 10000000 + 1) + 10000000 ))-f3ca-4bdf-9192-f5c452a2c923"
