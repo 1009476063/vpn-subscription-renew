@@ -1,0 +1,25 @@
+name: Auto Trigger Renew
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Wait before trigger
+      run: sleep 30
+
+    - name: Trigger renew workflow
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Triggering Renew VPN Subscription workflow..."
+        gh workflow run renew.yml -R ${{ github.repository }} --ref main -f event_type=renew-trigger
+        echo "Triggered successfully!"

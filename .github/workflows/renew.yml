@@ -1,8 +1,8 @@
 name: Renew VPN Subscription
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  repository_dispatch:
+    types: [renew-trigger]
   workflow_dispatch:
 
 permissions: write-all
@@ -28,13 +28,3 @@ jobs:
         GIST_ID: ${{ secrets.GIST_ID }}
       run: |
         python3 vpn_refresher.py
-
-    - name: Self-trigger next run
-      if: success()
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "Scheduling next run in 4 minutes to maintain continuous renewal..."
-        sleep 240
-        gh workflow run renew.yml --ref ${{ github.ref_name }}
-        echo "Next run triggered successfully!"
