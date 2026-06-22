@@ -54,24 +54,17 @@ jobs:
         git diff --cached --quiet || git commit -m "Update VPN subscription $(date +%Y-%m-%d_%H:%M)"
         git push
 
-  # 自我触发循环：完成后触发下一次运行
-  chain:
-    needs: renew
-    runs-on: ubuntu-latest
-    steps:
-    - name: Trigger next run
-      uses: actions/github-script@v7
-      with:
-        script: |
-          // 等待4分钟（确保30分钟内更新）
-          await new Promise(resolve => setTimeout(resolve, 240000));
-          
-          // 触发新的工作流运行
-          await github.rest.actions.createWorkflowDispatch({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            workflow_id: 'renew.yml',
-            ref: 'main'
-          });
-          
-          console.log('Triggered next workflow run');
+    - name: Wait and trigger next run
+      run: |
+        echo "Waiting 4 minutes before triggering next run..."
+        sleep 240
+        echo "Triggering next run via API..."
+        
+        # 使用 curl 直接调用 GitHub API 触发 workflow_dispatch
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${{ github.workflow_id }}/dispatches" \
+          -d '{"ref": "main"}'
+        
+        echo "Next run triggered"
