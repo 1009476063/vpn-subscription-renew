@@ -28,3 +28,15 @@ jobs:
         GIST_ID: ${{ secrets.GIST_ID }}
       run: |
         python3 vpn_refresher.py
+
+    - name: Chain next run in 25 minutes
+      if: success()
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Waiting 25 minutes before triggering next renewal..."
+        sleep 1500
+        echo "Triggering next renewal..."
+        gh api repos/${{ github.repository }}/actions/workflows/renew.yml/dispatches \
+          -f ref=main
+        echo "Next renewal triggered!"
