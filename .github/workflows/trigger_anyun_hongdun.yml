@@ -1,0 +1,26 @@
+name: Auto Trigger Anyun & Hongdun
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Wait before trigger
+      run: sleep 30
+
+    - name: Trigger renew workflow
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Triggering Renew Anyun & Hongdun workflow..."
+        gh api repos/${{ github.repository }}/actions/workflows/renew_anyun_hongdun.yml/dispatches \
+          -f ref=main
+        echo "Triggered successfully!"

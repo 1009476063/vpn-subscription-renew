@@ -1,0 +1,49 @@
+name: Renew Anyun & Hongdun
+
+on:
+  repository_dispatch:
+    types: [anyun-hongdun-trigger]
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Dependencies
+      run: pip install requests pyyaml
+
+    - name: Renew Anyun subscription
+      env:
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        GIST_ID: ${{ secrets.GIST_ID }}
+      run: |
+        python3 anyun_refresher.py
+
+    - name: Renew Hongdun subscription
+      env:
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        GIST_ID: ${{ secrets.GIST_ID }}
+      run: |
+        python3 hongdun_refresher.py
+
+    - name: Chain next run in 14 minutes
+      if: success()
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Waiting 14 minutes before triggering next renewal..."
+        sleep 840
+        echo "Triggering next renewal..."
+        gh api repos/${{ github.repository }}/actions/workflows/renew_anyun_hongdun.yml/dispatches \
+          -f ref=main
+        echo "Next renewal triggered!"
