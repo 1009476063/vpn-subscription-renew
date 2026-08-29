@@ -9,7 +9,11 @@ permissions: write-all
 
 jobs:
   renew:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -29,8 +33,12 @@ jobs:
       run: |
         python3 vpn_refresher.py
 
+  chain:
+    needs: renew
+    if: always() && contains(needs.renew.results, 'success')
+    runs-on: ubuntu-latest
+    steps:
     - name: Chain next run in 14 minutes
-      if: success()
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |

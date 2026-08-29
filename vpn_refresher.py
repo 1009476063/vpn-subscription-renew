@@ -82,10 +82,10 @@ def get_subscription():
     
     try:
         # 第一步：获取订阅URL
-        # 上游对 Actions 出口 IP 存在临时限流(403/429)，用更长退避重试
+        # 上游按 IP 段封锁 Actions 出口，同一次 job 内 IP 不变，仅短重试防瞬断
         response = request_with_retry(
             'POST', API_URL, json={"deviceKey": device_key}, headers=headers,
-            max_retries=5, timeout=REQUEST_TIMEOUT, backoff=60,
+            max_retries=2, timeout=REQUEST_TIMEOUT, backoff=30,
         )
         data = response.json()
         
