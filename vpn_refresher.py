@@ -118,6 +118,27 @@ def is_valid_short_id(sid):
     return bool(re.fullmatch(r"[0-9a-fA-F]+", sid))
 
 
+_RISKY_SCALAR = re.compile(
+    r"^[+-]?(?:0[xX][0-9a-fA-F]+|0[oO][0-7]+|0[bB][01]+|0[0-7]+|"
+    r"\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?|"
+    r"true|false|null|~|yes|no|on|off|True|False|Null|Yes|No|On|Off|TRUE|FALSE|NULL|YES|NO|ON|OFF)$"
+)
+
+
+class ClashSafeDumper(yaml.SafeDumper):
+    pass
+
+
+def _quote_risky_str(dumper, data):
+    # YAML 1.2 会把 87991e38、12345678 这类值解析成数字，导致 mihomo 校验失败，强制加引号
+    if _RISKY_SCALAR.match(data):
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
+    return yaml.SafeDumper.represent_str(dumper, data)
+
+
+ClashSafeDumper.add_representer(str, _quote_risky_str)
+
+
 def sanitize_clash_content(clash_content):
     """过滤 Reality 参数非法的节点，避免生成 Clash 无法解析的配置"""
     try:
@@ -139,7 +160,7 @@ def sanitize_clash_content(clash_content):
     if len(kept) != len(proxies):
         print(f"[INFO] 已过滤 {len(proxies) - len(kept)} 个非法节点，保留 {len(kept)} 个")
         data['proxies'] = kept
-        return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+        return yaml.dump(data, Dumper=ClashSafeDumper, allow_unicode=True, sort_keys=False)
     return clash_content
 
 
