@@ -6,6 +6,7 @@
 
 import random
 import os
+import re
 import sys
 import json
 import base64
@@ -93,6 +94,41 @@ def get_subscription():
     except Exception as e:
         print(f"[ERROR] Failed to get subscription: {e}")
         return None
+
+
+def is_valid_short_id(sid):
+    """Reality short-id 必须是非空且合法的十六进制字符串（偶数长度）"""
+    if not sid:
+        return False
+    sid = str(sid).strip()
+    if len(sid) % 2 != 0:
+        return False
+    return bool(re.fullmatch(r"[0-9a-fA-F]+", sid))
+
+
+def sanitize_clash_content(clash_content):
+    """过滤 Reality 参数非法的节点，避免生成 Clash 无法解析的配置"""
+    try:
+        data = yaml.safe_load(clash_content)
+    except Exception as e:
+        print(f"[WARN] 无法解析上游 YAML: {e}，保留原始内容")
+        return clash_content
+    proxies = data.get('proxies', [])
+    kept = []
+    for proxy in proxies:
+        if proxy.get('type') == 'vless':
+            opts = proxy.get('reality-opts') or {}
+            sid = opts.get('short-id', '')
+            pbk = opts.get('public-key', '')
+            if opts and (not is_valid_short_id(sid) or not pbk):
+                print(f"[WARN] 跳过 Reality 参数非法的节点: {proxy.get('name')} sid={sid!r} pbk={pbk!r}")
+                continue
+        kept.append(proxy)
+    if len(kept) != len(proxies):
+        print(f"[INFO] 已过滤 {len(proxies) - len(kept)} 个非法节点，保留 {len(kept)} 个")
+        data['proxies'] = kept
+        return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+    return clash_content
 
 
 def clash_to_quantumultx(clash_content):
@@ -222,6 +258,9 @@ def main():
     if not clash_content:
         print("[FAILED] Could not get subscription content.")
         sys.exit(1)
+
+    # 过滤 Reality 参数非法的节点
+    clash_content = sanitize_clash_content(clash_content)
     
     # 转换为 QuantumultX 格式
     print("[INFO] Converting to QuantumultX format...")

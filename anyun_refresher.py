@@ -8,6 +8,7 @@ Anyun VPN 自动订阅刷新脚本
 import base64
 import os
 import random
+import re
 import sys
 import time
 import urllib.parse
@@ -29,6 +30,16 @@ QX_FILENAME = "anyun_qx.txt"
 
 def generate_device_uid():
     return "".join(random.choice("0123456789abcdef") for _ in range(32))
+
+
+def is_valid_short_id(sid):
+    """Reality short-id 必须是非空且合法的十六进制字符串（偶数长度）"""
+    if not sid:
+        return False
+    sid = sid.strip()
+    if len(sid) % 2 != 0:
+        return False
+    return bool(re.fullmatch(r"[0-9a-fA-F]+", sid))
 
 
 def post_json(url, headers, payload=None, timeout=30):
@@ -98,6 +109,8 @@ def fetch_anyun_links():
 def parse_vless_uri(uri):
     """解析 vless:// 链接为 Clash proxy 字典"""
     parsed = urllib.parse.urlparse(uri)
+    if not parsed.hostname or not parsed.port:
+        return None
     proxy = {
         "name": urllib.parse.unquote(parsed.fragment or "Anyun"),
         "type": "vless",
@@ -109,11 +122,16 @@ def parse_vless_uri(uri):
     }
     params = urllib.parse.parse_qs(parsed.query)
     if params.get("security", ["none"])[0] == "reality":
+        sid = params.get("sid", [""])[0]
+        pbk = params.get("pbk", [""])[0]
+        if not is_valid_short_id(sid) or not pbk:
+            print(f"[WARN] 跳过 Reality 参数非法的节点: {proxy['name']} sid={sid!r} pbk={pbk!r}")
+            return None
         proxy["servername"] = params.get("sni", [None])[0]
         proxy["client-fingerprint"] = params.get("fp", ["chrome"])[0]
         proxy["reality-opts"] = {
-            "public-key": params.get("pbk", [""])[0],
-            "short-id": params.get("sid", [""])[0],
+            "public-key": pbk,
+            "short-id": sid,
         }
     if params.get("flow"):
         proxy["flow"] = params["flow"][0]
@@ -124,7 +142,9 @@ def build_clash_yaml(links):
     proxies = []
     for link in links:
         if link.startswith("vless://"):
-            proxies.append(parse_vless_uri(link))
+            proxy = parse_vless_uri(link)
+            if proxy:
+                proxies.append(proxy)
         elif link.startswith("vmess://"):
             payload = base64.b64decode(link[len("vmess://"):] + "==").decode("utf-8", "ignore")
             vmess = json_loads(payload)
@@ -144,6 +164,9 @@ def build_clash_yaml(links):
             )
 
     names = [p["name"] for p in proxies]
+    if not names:
+        print("[ERROR] 没有可用的节点，跳过写入")
+        return None
     config = {
         "mixed-port": 7890,
         "allow-lan": True,
@@ -175,14 +198,21 @@ def build_qx_base64(links):
     for link in links:
         if link.startswith("vless://"):
             parsed = urllib.parse.urlparse(link)
+            if not parsed.hostname or not parsed.port:
+                continue
             name = urllib.parse.unquote(parsed.fragment or "Anyun")
             params = urllib.parse.parse_qs(parsed.query)
+            sid = params.get("sid", [""])[0]
+            pbk = params.get("pbk", [""])[0]
+            if not is_valid_short_id(sid) or not pbk:
+                print(f"[WARN] QX 跳过 Reality 参数非法的节点: {name} sid={sid!r} pbk={pbk!r}")
+                continue
             qs = {
                 "encryption": "none",
                 "security": "reality",
                 "sni": params.get("sni", [""])[0],
-                "pbk": params.get("pbk", [""])[0],
-                "sid": params.get("sid", [""])[0],
+                "pbk": pbk,
+                "sid": sid,
                 "fp": params.get("fp", ["chrome"])[0],
                 "type": "tcp",
             }
@@ -193,6 +223,9 @@ def build_qx_base64(links):
             lines.append(uri)
         elif link.startswith("vmess://"):
             lines.append(link)
+    if not lines:
+        print("[ERROR] QX 没有可用节点")
+        return None
     return base64.b64encode("\n".join(lines).encode()).decode()
 
 
@@ -221,6 +254,8 @@ def main():
 
     clash_yaml = build_clash_yaml(links)
     qx_b64 = build_qx_base64(links)
+    if clash_yaml is None or qx_b64 is None:
+        sys.exit(1)
     print(f"[INFO] Clash {len(links)} 节点, QX Base64 生成完成")
 
     if update_gist(clash_yaml, qx_b64):
