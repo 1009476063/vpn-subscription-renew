@@ -8,6 +8,7 @@ import random
 import os
 import re
 import sys
+import time
 import json
 import base64
 import urllib.parse
@@ -31,7 +32,7 @@ def generate_device_key():
     return f"{random.randint(10000000, 99999999)}-f3ca-4bdf-9192-f5c452a2c923"
 
 
-def request_with_retry(method, url, max_retries=MAX_RETRIES, timeout=REQUEST_TIMEOUT, **kwargs):
+def request_with_retry(method, url, max_retries=MAX_RETRIES, timeout=REQUEST_TIMEOUT, backoff=10, **kwargs):
     """带重试的请求函数"""
     for attempt in range(max_retries):
         try:
@@ -41,12 +42,18 @@ def request_with_retry(method, url, max_retries=MAX_RETRIES, timeout=REQUEST_TIM
                 response = requests.post(url, timeout=timeout, **kwargs)
             else:
                 raise ValueError(f"Unsupported method: {method}")
+            if response.status_code in (403, 429):
+                print(f"[WARN] HTTP {response.status_code} from {url} (attempt {attempt + 1}/{max_retries}): {response.text[:200]}")
+                if attempt < max_retries - 1:
+                    wait = (attempt + 1) * backoff
+                    print(f"[INFO] Retrying in {wait}s...")
+                    time.sleep(wait)
+                    continue
             response.raise_for_status()
             return response
         except requests.exceptions.Timeout:
             print(f"[WARN] Request timeout (attempt {attempt + 1}/{max_retries}): {url}")
             if attempt < max_retries - 1:
-                import time
                 wait = (attempt + 1) * 5
                 print(f"[INFO] Retrying in {wait} seconds...")
                 time.sleep(wait)
@@ -55,7 +62,6 @@ def request_with_retry(method, url, max_retries=MAX_RETRIES, timeout=REQUEST_TIM
         except requests.exceptions.ConnectionError as e:
             print(f"[WARN] Connection error (attempt {attempt + 1}/{max_retries}): {e}")
             if attempt < max_retries - 1:
-                import time
                 wait = (attempt + 1) * 5
                 print(f"[INFO] Retrying in {wait} seconds...")
                 time.sleep(wait)
@@ -76,7 +82,11 @@ def get_subscription():
     
     try:
         # 第一步：获取订阅URL
-        response = request_with_retry('POST', API_URL, json={"deviceKey": device_key}, headers=headers)
+        # 上游对 Actions 出口 IP 存在临时限流(403/429)，用更长退避重试
+        response = request_with_retry(
+            'POST', API_URL, json={"deviceKey": device_key}, headers=headers,
+            max_retries=5, timeout=REQUEST_TIMEOUT, backoff=60,
+        )
         data = response.json()
         
         yml_url = data.get('data', {}).get('ymlUrl')
