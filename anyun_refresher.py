@@ -44,6 +44,27 @@ def is_valid_short_id(sid):
     return bool(re.fullmatch(r"[0-9a-fA-F]+", sid))
 
 
+_RISKY_SCALAR = re.compile(
+    r"^[+-]?(?:0[xX][0-9a-fA-F]+|0[oO][0-7]+|0[bB][01]+|0[0-7]+|"
+    r"\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?|"
+    r"true|false|null|~|yes|no|on|off|True|False|Null|Yes|No|On|Off|TRUE|FALSE|NULL|YES|NO|ON|OFF)$"
+)
+
+
+class ClashSafeDumper(yaml.SafeDumper):
+    pass
+
+
+def _quote_risky_str(dumper, data):
+    # YAML 1.2 会把 87991e38、12345678 这类值解析成数字，导致 mihomo 校验失败，强制加引号
+    if _RISKY_SCALAR.match(data):
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
+    return yaml.SafeDumper.represent_str(dumper, data)
+
+
+ClashSafeDumper.add_representer(str, _quote_risky_str)
+
+
 def post_json(url, headers, payload=None, timeout=30):
     resp = requests.post(url, json=payload, headers=headers, timeout=timeout)
     resp.raise_for_status()
@@ -186,7 +207,7 @@ def build_clash_yaml(links):
         ],
         "rules": ["MATCH,节点选择"],
     }
-    return yaml.safe_dump(config, allow_unicode=True, sort_keys=False)
+    return yaml.dump(config, Dumper=ClashSafeDumper, allow_unicode=True, sort_keys=False)
 
 
 def json_loads(s):
