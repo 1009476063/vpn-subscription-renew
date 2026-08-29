@@ -6,12 +6,14 @@
 
 ## 🔗 订阅链接
 
-### 快猫VPN（每 15 分钟刷新）
+### 快猫VPN（每 25 分钟刷新）
 
 | 客户端 | 订阅地址 |
 |--------|----------|
 | **Clash** | `https://gist.githubusercontent.com/1009476063/98ee639023acbec7a4b086cc87cd2de7/raw/vpn_subs_clash.txt` |
 | **QuantumultX** | `https://gist.githubusercontent.com/1009476063/98ee639023acbec7a4b086cc87cd2de7/raw/vpn_subs_qx.txt?opt-parser=true&resource_parser=url` |
+
+> 快猫实际为**约每 15 分钟**刷新一轮（14 分钟链式间隔 + 双平台容错），保证在 30 分钟 UUID 过期前完成替换。
 
 ### Anyun VPN（每 15 分钟刷新）
 
@@ -35,23 +37,24 @@
 
 ### 客户端配置建议
 
-- 快猫：刷新间隔设为 **15 分钟或更短**
+- 快猫：刷新间隔设为 **10 分钟或更短**（UUID 30 分钟过期，双保险）
 - Anyun / 红盾：刷新间隔设为 **15 分钟或更短**
 - 订阅链接固定不变，客户端定时刷新即可
 
 ## ⚙️ 工作原理
 
-1. **链式自触发**：主工作流成功更新后，等待固定间隔自动触发下一次运行，形成连续循环
-2. **冷启动兜底**：trigger 工作流通过 cron 定时触发，作为链断后的恢复机制
-3. 每次运行调用各 VPN API 获取新订阅，解析为 Clash YAML 与 QuantumultX Base64，更新到公开 Gist
+1. **链式自触发**：主工作流成功更新后，等待 14 分钟自动触发下一次运行，形成连续循环
+2. **双平台容错**：快猫主链路跑 Ubuntu，失败时自动切到 macOS 备份链路（上游对部分 Actions 出口 IP 段返回 403，双平台显著提高成功率）
+3. **冷启动兜底**：trigger 工作流通过 cron（每 15 分钟）定时触发，作为链断后的恢复机制
+4. 每次运行调用各 VPN API 获取新订阅，解析为 Clash YAML 与 QuantumultX Base64，更新到公开 Gist
 
-三个平台的链路统一每 15 分钟刷新一次。
+快猫链路约每 15 分钟刷新一次；Anyun 与红盾链路每 15 分钟刷新一次。
 
 ## 📁 文件结构
 
 ```
 ├── .github/workflows/
-│   ├── renew.yml                     # 快猫主工作流：15分钟链式自触发
+│   ├── renew.yml                     # 快猫主工作流：获取订阅 + 链式自触发
 │   ├── trigger.yml                   # 快猫备用触发器：cron 调度启动
 │   ├── renew_anyun_hongdun.yml       # Anyun/红盾主工作流：15分钟链式自触发
 │   └── trigger_anyun_hongdun.yml     # Anyun/红盾备用触发器：cron 调度启动
@@ -65,9 +68,9 @@
 ## 🔧 技术细节
 
 - **协议支持**: VLESS (Reality/TLS), VMess, Trojan, Shadowsocks
-- **Reality 参数**: 自动提取 `public-key`, `short-id`, `client-fingerprint`, `sni`
+- **Reality 参数**: 自动提取 `public-key`, `short-id`, `client-fingerprint`, `sni`，并校验 `short-id` 为合法十六进制（非法节点直接跳过，避免 Clash 解析报错）
 - **格式转换**: Python + PyYAML 生成 Clash YAML，QuantumultX 使用 Base64 URI 列表
-- **容错机制**: HTTP 请求自动重试，超时时间 60 秒
+- **容错机制**: HTTP 请求自动重试（含 403/429 退避），超时时间 60 秒；上游按 IP 段封锁时由 macOS 备份链路接管
 
 ## 📝 部署配置
 
