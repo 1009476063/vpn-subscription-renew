@@ -107,11 +107,13 @@ def get_subscription():
 
 
 def is_valid_short_id(sid):
-    """Reality short-id 必须是非空且合法的十六进制字符串（偶数长度）"""
+    """Reality short-id 必须是非空、合法十六进制且解码后不超过 16 字节（与 mihomo 校验一致）"""
     if not sid:
         return False
     sid = str(sid).strip()
     if len(sid) % 2 != 0:
+        return False
+    if len(sid) > 32:
         return False
     return bool(re.fullmatch(r"[0-9a-fA-F]+", sid))
 
