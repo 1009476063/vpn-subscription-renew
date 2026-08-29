@@ -1,0 +1,29 @@
+name: Diag Kuaimao
+
+on:
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  diag:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Test Kuaimao API
+      shell: python
+      run: |
+        import requests, random
+        key = f"{random.randint(10000000,99999999)}-f3ca-4bdf-9192-f5c452a2c923"
+        headers = {"user-agent":"Dart/3.12 (dart:io)","content-type":"application/json","accept-encoding":"gzip"}
+        try:
+            r = requests.post("https://api.kuaimiaov4.com/appV4api/manusAi/applyLogin", json={"deviceKey":key}, headers=headers, timeout=20)
+            print("STATUS", r.status_code, r.text[:150])
+        except Exception as e:
+            print("ERR", repr(e))
