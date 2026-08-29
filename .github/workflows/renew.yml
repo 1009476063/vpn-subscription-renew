@@ -9,11 +9,30 @@ permissions: write-all
 
 jobs:
   renew:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Dependencies
+      run: pip install requests pyyaml
+
+    - name: Get and update subscription
+      env:
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        GIST_ID: ${{ secrets.GIST_ID }}
+      run: |
+        python3 vpn_refresher.py
+
+  renew-backup:
+    needs: renew
+    if: failure()
+    runs-on: macos-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -34,8 +53,8 @@ jobs:
         python3 vpn_refresher.py
 
   chain:
-    needs: renew
-    if: always() && contains(needs.renew.results, 'success')
+    needs: [renew, renew-backup]
+    if: always() && !cancelled() && (needs.renew.result == 'success' || needs.renew-backup.result == 'success')
     runs-on: ubuntu-latest
     steps:
     - name: Chain next run in 14 minutes
