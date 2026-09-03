@@ -8,7 +8,21 @@ on:
 permissions: write-all
 
 jobs:
-  renew-primary:
+  renew-selfhosted:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - run: pip install requests pyyaml
+    - name: Get and update subscription
+      env:
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        GIST_ID: ${{ secrets.GIST_ID }}
+      run: python3 vpn_refresher.py
+
+  renew-ubuntu:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -52,8 +66,8 @@ jobs:
       run: python vpn_refresher.py
 
   chain:
-    needs: [renew-primary, renew-macos, renew-windows]
-    if: always() && !cancelled() && (needs.renew-primary.result == 'success' || needs.renew-macos.result == 'success' || needs.renew-windows.result == 'success')
+    needs: [renew-selfhosted, renew-ubuntu, renew-macos, renew-windows]
+    if: always() && !cancelled() && (needs.renew-selfhosted.result == 'success' || needs.renew-ubuntu.result == 'success' || needs.renew-macos.result == 'success' || needs.renew-windows.result == 'success')
     runs-on: ubuntu-latest
     steps:
     - name: Chain next run in 14 minutes
