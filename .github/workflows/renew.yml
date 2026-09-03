@@ -8,53 +8,52 @@ on:
 permissions: write-all
 
 jobs:
-  renew:
+  renew-primary:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-
-    - name: Install Dependencies
-      run: pip install requests pyyaml
-
+    - run: pip install requests pyyaml
     - name: Get and update subscription
       env:
         GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
         GIST_ID: ${{ secrets.GIST_ID }}
-      run: |
-        python3 vpn_refresher.py
+      run: python3 vpn_refresher.py
 
-  renew-backup:
-    needs: renew
-    if: failure()
+  renew-macos:
     runs-on: macos-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-
-    - name: Install Dependencies
-      run: pip install requests pyyaml
-
+    - run: pip install requests pyyaml
     - name: Get and update subscription
       env:
         GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
         GIST_ID: ${{ secrets.GIST_ID }}
-      run: |
-        python3 vpn_refresher.py
+      run: python3 vpn_refresher.py
+
+  renew-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - run: pip install requests pyyaml
+    - name: Get and update subscription
+      shell: pwsh
+      env:
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+        GIST_ID: ${{ secrets.GIST_ID }}
+      run: python vpn_refresher.py
 
   chain:
-    needs: [renew, renew-backup]
-    if: always() && !cancelled() && (needs.renew.result == 'success' || needs.renew-backup.result == 'success')
+    needs: [renew-primary, renew-macos, renew-windows]
+    if: always() && !cancelled() && (needs.renew-primary.result == 'success' || needs.renew-macos.result == 'success' || needs.renew-windows.result == 'success')
     runs-on: ubuntu-latest
     steps:
     - name: Chain next run in 14 minutes
@@ -64,6 +63,5 @@ jobs:
         echo "Waiting 14 minutes before triggering next renewal..."
         sleep 840
         echo "Triggering next renewal..."
-        gh api repos/${{ github.repository }}/actions/workflows/renew.yml/dispatches \
-          -f ref=main
+        gh api repos/${{ github.repository }}/actions/workflows/renew.yml/dispatches -f ref=main
         echo "Next renewal triggered!"
