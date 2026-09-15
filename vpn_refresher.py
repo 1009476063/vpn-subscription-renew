@@ -28,8 +28,9 @@ MAX_RETRIES = 3
 
 
 def generate_device_key():
-    """生成随机设备密钥"""
-    return f"{random.randint(10000000, 99999999)}-f3ca-4bdf-9192-f5c452a2c923"
+    """生成随机设备密钥（采用标准 UUID4，彻底杜绝短数字前缀碰撞导致'邮箱已在系统中存在'）"""
+    import uuid
+    return str(uuid.uuid4())
 
 
 def request_with_retry(method, url, max_retries=MAX_RETRIES, timeout=REQUEST_TIMEOUT, backoff=10, **kwargs):
@@ -88,8 +89,17 @@ def get_subscription():
             max_retries=2, timeout=REQUEST_TIMEOUT, backoff=30,
         )
         data = response.json()
-        
-        yml_url = data.get('data', {}).get('ymlUrl')
+        if data.get('code') != 200:
+            print(f"[WARN] Upstream API code={data.get('code')}, msg={data.get('msg')}")
+            # 重试一次换个全新 deviceKey
+            new_dk = generate_device_key()
+            response = request_with_retry(
+                'POST', API_URL, json={"deviceKey": new_dk}, headers=headers,
+                max_retries=2, timeout=REQUEST_TIMEOUT, backoff=5,
+            )
+            data = response.json() if response else {}
+
+        yml_url = (data.get('data') or {}).get('ymlUrl')
         if not yml_url:
             print(f"[ERROR] No ymlUrl in response: {data}")
             return None
