@@ -38,28 +38,29 @@
 由于快猫上游 API（`api.kuaimiaov4.com`）部署了 GSL 高防与严格的机房 IP 拦截策略（对 GitHub Actions 云端 Runner 与部分数据中心直接丢弃握手），单一依赖云端 Actions 无法达成 100% 可用率。因此系统升级为 **“主客协同 + 智能巡检 + 探针联动”** 完整闭环：
 
 ```mermaid
-graph TD
-    subgraph 主通道 - macOS 本地 (家宽环境)
-        M[Mac 本地 launchd 定时器\n每 10 分钟运行] -->|家宽直连 API 取新订阅| A[快猫官方 API]
-        M -->|更新节点池| G[GitHub Gist\n98ee639023acbec7a4b086cc87cd2de7]
-        M -->|上报 status=up msg=Mac_synced_OK| K[Uptime Kuma\n心跳监控探针]
+flowchart TD
+    subgraph S1 ["主通道 - macOS 本地 (家宽环境)"]
+        M["Mac 本地 launchd 定时器<br/>每 10 分钟运行"] -->|"家宽直连 API 取新订阅"| A["快猫官方 API"]
+        M -->|"更新节点池"| G["GitHub Gist<br/>98ee639023acbec7a4b086cc87cd2de7"]
+        M -->|"上报 status=up"| K["Uptime Kuma<br/>心跳监控探针"]
     end
 
-    subgraph 守护通道 - 7x24h Linux 常驻服务器
-        V[VPS Crontab 定时器\n每 10 分钟运行] -->|1. 检查 Gist 新鲜度| G
-        V -->|新鲜度 < 20min| H[跳过重复请求\n上报 status=up msg=Gist_fresh_active] --> K
-        V -->|失联兜底: 新鲜度 >= 20min| W[激活本地 WARP SOCKS5 隧道]
-        W -->|代理穿透拉取新订阅| A
-        W -->|应急补推| G
-        W -->|上报 status=up msg=VPS_fallback_OK| K
+    subgraph S2 ["守护通道 - 7x24h Linux 常驻服务器"]
+        V["VPS Crontab 定时器<br/>每 10 分钟运行"] -->|"1. 检查 Gist 新鲜度"| G
+        V -->|"新鲜度小于 20 分钟"| H["跳过重复请求<br/>上报 Gist_fresh_active"]
+        H --> K
+        V -->|"失联兜底: 超过 20 分钟未更新"| W["激活本地 WARP SOCKS5 隧道"]
+        W -->|"代理穿透拉取新订阅"| A
+        W -->|"应急补推"| G
+        W -->|"上报 status=up"| K
     end
 
-    subgraph 自动化流水线 - GitHub Actions
-        GH[Actions 15分钟链式自触发] -->|定时自动化轮转| AH[Anyun & 红盾 API]
-        GH -->|聚合更新| G
+    subgraph S3 ["自动化流水线 - GitHub Actions"]
+        GH["Actions 15分钟链式自触发"] -->|"定时自动化轮转"| AH["Anyun & 红盾 API"]
+        GH -->|"聚合更新"| G
     end
 
-    G -->|统一固定 URL 订阅| C[Clash / QuantumultX 客户端]
+    G -->|"统一固定 URL 订阅"| C["Clash / QuantumultX 客户端"]
 ```
 
 ### 1. 双机协同机制
