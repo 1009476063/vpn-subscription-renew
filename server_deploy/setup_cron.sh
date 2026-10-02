@@ -1,7 +1,7 @@
 #!/bin/sh
-# 一键安装 Crontab 定时任务（每 13 分钟执行一次，结合脚本内随机 5~45s Jitter）
+# 一键安装 Crontab 定时任务（每 10 分钟执行一次，结合脚本内随机 3~15s Jitter）
 DIR="$(cd "$(dirname "$0")" && pwd)"
-CRON_CMD="*/13 * * * * $DIR/refresh.sh >/dev/null 2>&1"
+CRON_CMD="*/10 * * * * $DIR/refresh.sh >/dev/null 2>&1"
 
 crontab -l 2>/dev/null > /tmp/current_cron || true
 if grep -Fq "$DIR/refresh.sh" /tmp/current_cron 2>/dev/null; then

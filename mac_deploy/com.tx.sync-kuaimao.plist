@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.tx.sync-kuaimao</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/tanxiang/sync-kuaimao/refresh.sh</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/tanxiang/sync-kuaimao/launchd.err.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/tanxiang/sync-kuaimao/launchd.out.log</string>
+	<key>StartInterval</key>
+	<integer>600</integer>
+</dict>
+</plist>
